@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>阿里云余额与代金券</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel-soft: #f2f4f7;
+    --text: #171a20;
+    --muted: #667085;
+    --line: rgba(16, 24, 40, 0.10);
+    --accent: #ff6a00;
+    --accent-strong: #e05a00;
+    --accent-soft: rgba(255, 106, 0, 0.11);
+    --good: #067647;
+    --bad: #b42318;
+    --warn: #b54708;
+    --info: #175cd3;
+    --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 28px rgba(16, 24, 40, 0.06);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101216;
+      --panel: #171a20;
+      --panel-soft: #1e222a;
+      --text: #eceff4;
+      --muted: #98a2b3;
+      --line: rgba(255, 255, 255, 0.12);
+      --accent: #ff8533;
+      --accent-strong: #ff9a52;
+      --accent-soft: rgba(255, 133, 51, 0.16);
+      --good: #4ade80;
+      --bad: #f97066;
+      --warn: #fdb022;
+      --info: #84adff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+  }
+  html[data-theme="dark"] {
+    --bg: #101216;
+    --panel: #171a20;
+    --panel-soft: #1e222a;
+    --text: #eceff4;
+    --muted: #98a2b3;
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #ff8533;
+    --accent-strong: #ff9a52;
+    --accent-soft: rgba(255, 133, 51, 0.16);
+    --good: #4ade80;
+    --bad: #f97066;
+    --warn: #fdb022;
+    --info: #84adff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .app { max-width: 880px; margin: 0 auto; padding: 20px 20px 28px; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .brand-mark {
+    flex: none; width: 38px; height: 38px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #ff8a3d, #ff5a00);
+    color: #fff; font-weight: 700; font-size: 17px;
+    box-shadow: 0 6px 16px rgba(255, 90, 0, 0.28);
+  }
+  .brand-text { min-width: 0; }
+  h1 { margin: 0; font-size: 18px; line-height: 1.25; letter-spacing: -0.01em; }
+  .subtitle { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 999px;
+    background: var(--panel-soft); color: var(--muted);
+    border: 1px solid var(--line); font-size: 12px; white-space: nowrap;
+  }
+  .chip.good { color: var(--good); background: color-mix(in srgb, var(--good) 10%, transparent); border-color: transparent; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+  }
+  .btn {
+    appearance: none; border: 1px solid transparent; border-radius: 10px;
+    padding: 9px 14px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--panel-soft); color: var(--text);
+    transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--line); }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover:not(:disabled) { background: var(--accent-strong); }
+  .btn.ghost { background: transparent; border-color: var(--line); color: var(--text); }
+  .btn.ghost:hover:not(:disabled) { background: var(--panel-soft); }
+  .btn.ghost.danger { color: var(--bad); }
+  .btn.mini {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    padding: 4px 9px; font-size: 12px; border-radius: 8px;
+    background: transparent; color: var(--muted);
+  }
+  .btn.mini:hover:not(:disabled) { background: var(--panel-soft); color: var(--text); }
+  .banner {
+    margin-bottom: 14px; padding: 10px 13px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--panel);
+    font-size: 13px;
+  }
+  .banner.info { color: var(--info); border-color: color-mix(in srgb, var(--info) 35%, transparent); background: color-mix(in srgb, var(--info) 8%, var(--panel)); }
+  .banner.success { color: var(--good); border-color: color-mix(in srgb, var(--good) 35%, transparent); background: color-mix(in srgb, var(--good) 8%, var(--panel)); }
+  .banner.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); background: color-mix(in srgb, var(--warn) 9%, var(--panel)); }
+  .banner.error { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 35%, transparent); background: color-mix(in srgb, var(--bad) 8%, var(--panel)); }
+  .setup { padding: 20px; }
+  .setup h2 { margin: 0 0 4px; font-size: 16px; }
+  .setup > p { margin: 0 0 14px; color: var(--muted); }
+  .setup form { display: grid; gap: 12px; }
+  .field { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+  .field input {
+    width: 100%; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel-soft); color: var(--text);
+    font: inherit; font-weight: 400; outline: none;
+  }
+  .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .secret-wrap { position: relative; display: block; }
+  .secret-wrap input { padding-right: 64px; }
+  .form-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .privacy { margin: 0; color: var(--muted); font-size: 12px; }
+  .setup-notes { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 8px; color: var(--muted); font-size: 12.5px; }
+  .setup-notes p { margin: 0; }
+  .setup-notes strong { color: var(--text); }
+  code { font-family: "Cascadia Code", Consolas, monospace; font-size: 0.94em; background: var(--panel-soft); padding: 1px 5px; border-radius: 5px; }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .metric { display: flex; flex-direction: column; gap: 4px; min-height: 118px; }
+  .metric.hero { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); background: linear-gradient(180deg, var(--accent-soft), var(--panel) 60%); }
+  .metric-label { margin: 0; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+  .metric-value {
+    margin: 2px 0; font-size: clamp(24px, 4.4vw, 31px); line-height: 1.15; font-weight: 700;
+    letter-spacing: -0.02em; font-variant-numeric: tabular-nums; word-break: break-all;
+  }
+  .metric-value.compact { font-size: clamp(17px, 2.6vw, 21px); line-height: 1.35; }
+  .metric-foot { margin: auto 0 0; color: var(--muted); font-size: 12px; }
+  .notice { margin-top: 12px; padding: 14px 18px; }
+  .notice h2 { margin: 0 0 6px; font-size: 14px; color: var(--warn); }
+  .notice ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .notice li + li { margin-top: 4px; }
+  .notice li strong { color: var(--text); font-weight: 600; }
+  .coupon-card { margin-top: 12px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .card-head h2 { margin: 0; font-size: 14.5px; }
+  .coupon-list { display: grid; }
+  .coupon-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .coupon-row:first-child { border-top: 0; }
+  .coupon-main { min-width: 0; }
+  .coupon-title { margin: 0 0 2px; font-weight: 600; font-size: 13px; overflow-wrap: anywhere; }
+  .coupon-meta { margin: 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .coupon-amount { text-align: right; flex: none; }
+  .coupon-balance { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .coupon-nominal { margin: 0; color: var(--muted); font-size: 11.5px; }
+  .empty { margin: 8px 0 2px; color: var(--muted); font-size: 13px; }
+  .more { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+  .boundary { margin: 12px 2px; color: var(--muted); font-size: 12px; }
+  .manage-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .footer { margin-top: 16px; color: var(--muted); font-size: 11.5px; text-align: center; }
+  @media (max-width: 560px) {
+    .app { padding: 14px 12px 22px; }
+    .topbar { align-items: flex-start; flex-direction: column; gap: 10px; }
+    .topbar-actions { width: 100%; justify-content: space-between; }
+    .metrics { grid-template-columns: 1fr; }
+    .metric { min-height: 0; }
+    .coupon-row { align-items: flex-start; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">云</div>
+      <div class="brand-text">
+        <h1>阿里云余额与代金券</h1>
+        <p class="subtitle" id="status-line">正在连接 Codex…</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span class="chip" id="source-chip" hidden></span>
+      <button class="btn ghost" id="refresh-btn" type="button" hidden>刷新</button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
+
+  <section class="card setup" id="setup-view" hidden>
+    <h2>连接阿里云账户</h2>
+    <p>填写一次只读 RAM 用户的 AccessKey。密钥会用当前 Windows 用户加密保存在本机，之后打开 Codex 就能直接查看。</p>
+    <form id="credential-form" autocomplete="off" novalidate>
+      <label class="field">
+        <span>AccessKey ID</span>
+        <input id="ak-input" type="text" autocomplete="off" spellcheck="false" maxlength="256" placeholder="LTAI..." />
+      </label>
+      <label class="field">
+        <span>AccessKey Secret</span>
+        <span class="secret-wrap">
+          <input id="sk-input" type="password" autocomplete="new-password" spellcheck="false" maxlength="256" placeholder="只读 RAM 用户的 Secret" />
+          <button class="btn mini" id="toggle-secret" type="button" aria-label="显示 AccessKey Secret">显示</button>
+        </span>
+      </label>
+      <div class="form-actions">
+        <button class="btn primary" id="save-btn" type="submit">加密保存并查询</button>
+        <button class="btn ghost" id="cancel-setup" type="button" hidden>取消</button>
+      </div>
+      <p class="privacy">密钥只保存在本机，不会进入对话、日志或第三方服务；插件只访问阿里云官方接口。</p>
+    </form>
+    <div class="setup-notes">
+      <p><strong>权限：</strong>请创建专用 RAM 用户并授予 <code>AliyunBSSReadOnlyAccess</code>，不要使用阿里云主账号 AccessKey。</p>
+      <p id="platform-note" hidden>当前系统不支持本机加密保存，无法在面板中保存凭据。</p>
+    </div>
+  </section>
+
+  <section id="dashboard-view" hidden>
+    <div class="metrics">
+      <article class="card metric hero">
+        <p class="metric-label">账户可用金额</p>
+        <p class="metric-value" id="balance-available">—</p>
+        <p class="metric-foot" id="balance-detail">现金余额 — · 信控额度 —</p>
+      </article>
+      <article class="card metric">
+        <p class="metric-label">可用代金券余额</p>
+        <p class="metric-value" id="coupon-balance">—</p>
+        <p class="metric-foot" id="coupon-detail">可用 0 张 · 面额合计 —</p>
+      </article>
+      <article class="card metric">
+        <p class="metric-label">代金券最近到期</p>
+        <p class="metric-value compact" id="coupon-expiry">—</p>
+        <p class="metric-foot" id="coupon-counts">可用 0 · 过期 0 · 作废 0</p>
+      </article>
+    </div>
+
+    <div class="card notice" id="error-list" hidden>
+      <h2>查询提示</h2>
+      <ul id="error-items"></ul>
+    </div>
+
+    <article class="card coupon-card">
+      <div class="card-head">
+        <h2>可用代金券明细</h2>
+        <span class="chip" id="coupon-badge" hidden></span>
+      </div>
+      <div class="coupon-list" id="coupon-list"></div>
+    </article>
+
+    <p class="boundary">账户余额与代金券余额是两种口径，不能相加；这里展示的是阿里云账户级数据，不代表百炼 Token 配额或消费明细。</p>
+
+    <div class="manage-row">
+      <button class="btn ghost" id="change-btn" type="button">更换 AccessKey</button>
+      <button class="btn ghost danger" id="clear-btn" type="button">清除本机凭据</button>
+    </div>
+  </section>
+
+  <footer class="footer" id="fetched-at">尚未查询</footer>
+</div>
+<script type="module">
+(function () {
+  'use strict';
+
+  var TOOL_OVERVIEW = 'get_aliyun_overview';
+  var TOOL_STATUS = 'get_credential_status';
+  var TOOL_SAVE = 'save_aliyun_credentials';
+  var TOOL_CLEAR = 'clear_aliyun_credentials';
+
+  var els = {
+    statusLine: document.getElementById('status-line'),
+    sourceChip: document.getElementById('source-chip'),
+    refresh: document.getElementById('refresh-btn'),
+    banner: document.getElementById('banner'),
+    setupView: document.getElementById('setup-view'),
+    dashboardView: document.getElementById('dashboard-view'),
+    form: document.getElementById('credential-form'),
+    akInput: document.getElementById('ak-input'),
+    skInput: document.getElementById('sk-input'),
+    toggleSecret: document.getElementById('toggle-secret'),
+    save: document.getElementById('save-btn'),
+    cancelSetup: document.getElementById('cancel-setup'),
+    platformNote: document.getElementById('platform-note'),
+    balanceAvailable: document.getElementById('balance-available'),
+    balanceDetail: document.getElementById('balance-detail'),
+    couponBalance: document.getElementById('coupon-balance'),
+    couponDetail: document.getElementById('coupon-detail'),
+    couponExpiry: document.getElementById('coupon-expiry'),
+    couponCounts: document.getElementById('coupon-counts'),
+    errorList: document.getElementById('error-list'),
+    errorItems: document.getElementById('error-items'),
+    couponList: document.getElementById('coupon-list'),
+    couponBadge: document.getElementById('coupon-badge'),
+    change: document.getElementById('change-btn'),
+    clear: document.getElementById('clear-btn'),
+    fetchedAt: document.getElementById('fetched-at')
+  };
+
+  var state = {
+    bridgeReady: false,
+    status: null,
+    overview: null,
+    busy: false,
+    editing: false,
+    confirmClearUntil: 0,
+    theme: 'auto'
+  };
+
+  function setText(node, text) {
+    if (node) node.textContent = String(text == null ? '' : text);
+  }
+
+  function show(node, visible) {
+    if (node) node.hidden = !visible;
+  }
+
+  function money(currency, amount) {
+    var cur = String(currency || 'CNY').toUpperCase();
+    var value = amount === null || amount === undefined || amount === '' ? '0.00' : String(amount);
+    return (cur === 'CNY' ? '¥' : cur + ' ') + value;
+  }
+
+  function pad2(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function timeText(iso) {
+    if (!iso) return '未提供';
+    var date = new Date(iso);
+    if (!Number.isFinite(date.getTime())) return '未提供';
+    try {
+      var formatter = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23'
+      });
+      var parts = formatter.formatToParts(date);
+      var get = function (type) {
+        for (var i = 0; i < parts.length; i += 1) {
+          if (parts[i].type === type) return parts[i].value;
+        }
+        return '';
+      };
+      return get('year') + '-' + get('month') + '-' + get('day') + ' ' + get('hour') + ':' + get('minute');
+    } catch (error) {
+      return date.toISOString().slice(0, 16).replace('T', ' ');
+    }
+  }
+
+  function applyTheme(theme) {
+    state.theme = theme === 'light' || theme === 'dark' ? theme : 'auto';
+    if (state.theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', state.theme);
+    }
+  }
+
+  function setBanner(kind, text) {
+    var value = String(text == null ? '' : text);
+    els.banner.className = 'banner' + (kind ? ' ' + kind : '');
+    setText(els.banner, value);
+    show(els.banner, !!value);
+  }
+
+  function errorText(error) {
+    var message = error && typeof error.message === 'string' ? error.message : '';
+    if (message.indexOf('bridge-timeout') >= 0) {
+      return '面板与 Codex 的连接超时，请关闭面板后重新打开。';
+    }
+    if (message.indexOf('tool-error') >= 0) {
+      return '查询没有完成，请稍后重试。';
+    }
+    return '操作未完成，请稍后重试；若持续失败，请重新打开面板。';
+  }
+
+  function setBusy(busy, label) {
+    state.busy = !!busy;
+    els.app = document.getElementById('app');
+    if (els.app) els.app.setAttribute('aria-busy', busy ? 'true' : 'false');
+    els.refresh.disabled = !!busy;
+    setText(els.refresh, busy ? '查询中…' : '刷新');
+    els.save.disabled = !!busy || !state.status || state.status.canSave !== true;
+    if (label) setBanner('info', label);
+  }
+
+
+  function syncViews() {
+    var configured = !!(state.status && state.status.configured);
+    var showSetup = !configured || state.editing;
+    show(els.setupView, showSetup);
+    show(els.dashboardView, configured && !state.editing);
+    show(els.refresh, configured && !state.editing);
+    show(els.sourceChip, configured);
+    if (els.cancelSetup) show(els.cancelSetup, configured && state.editing);
+    var canSave = !!(state.status && state.status.canSave === true);
+    if (els.platformNote) show(els.platformNote, !!(state.status && state.status.canSave === false));
+    if (els.akInput) els.akInput.disabled = state.busy || !canSave;
+    if (els.skInput) els.skInput.disabled = state.busy || !canSave;
+    if (els.save) els.save.disabled = state.busy || !canSave;
+    if (els.change) els.change.disabled = state.busy;
+    if (els.clear) els.clear.disabled = state.busy;
+  }
+
+  function renderStatusLine() {
+    if (!state.bridgeReady) {
+      setText(els.statusLine, '正在连接 Codex…');
+      return;
+    }
+    var status = state.status;
+    if (!status) {
+      setText(els.statusLine, '正在检查本机凭据…');
+      return;
+    }
+    if (!status.configured) {
+      setText(els.statusLine, '尚未连接阿里云账户');
+      els.sourceChip.className = 'chip';
+      show(els.sourceChip, false);
+      return;
+    }
+    var isStored = status.storage === 'windows-dpapi';
+    setText(els.statusLine, isStored ? '只读 RAM AccessKey 已加密保存在本机' : '正在使用环境变量中的 AccessKey');
+    setText(els.sourceChip, isStored ? '本机加密保存' : '环境变量');
+    els.sourceChip.className = 'chip good';
+    show(els.sourceChip, true);
+  }
+
+  function resetDashboard() {
+    setText(els.balanceAvailable, '—');
+    setText(els.balanceDetail, '现金余额 — · 信控额度 —');
+    setText(els.couponBalance, '—');
+    setText(els.couponDetail, '可用 0 张 · 面额合计 —');
+    setText(els.couponExpiry, '—');
+    setText(els.couponCounts, '可用 0 · 过期 0 · 作废 0');
+    if (els.couponList) els.couponList.replaceChildren();
+    if (els.errorItems) els.errorItems.replaceChildren();
+    show(els.errorList, false);
+    show(els.couponBadge, false);
+    setText(els.fetchedAt, '尚未查询');
+  }
+
+  function addTextElement(parent, tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = String(text == null ? '' : text);
+    parent.appendChild(node);
+    return node;
+  }
+
+  function scopeLabel(scope) {
+    if (scope === 'balance') return '账户余额';
+    if (scope === 'coupons') return '代金券';
+    if (scope === 'credentials') return '凭据';
+    return '查询';
+  }
+
+  function renderErrors(errors) {
+    if (!els.errorItems) return;
+    els.errorItems.replaceChildren();
+    var list = Array.isArray(errors) ? errors : [];
+    show(els.errorList, list.length > 0);
+    for (var i = 0; i < list.length; i += 1) {
+      var item = list[i] || {};
+      var row = document.createElement('li');
+      addTextElement(row, 'strong', '', scopeLabel(String(item.scope || '')) + '：');
+      row.appendChild(document.createTextNode(String(item.message || '本次未能获取该部分数据。')));
+      els.errorItems.appendChild(row);
+    }
+  }
+
+  function renderCoupons(coupons, currency) {
+    if (!coupons) {
+      setText(els.couponBalance, '未获取');
+      setText(els.couponDetail, '本次查询未返回代金券数据');
+      setText(els.couponExpiry, '未获取');
+      setText(els.couponCounts, '状态统计不可用');
+      if (els.couponList) {
+        els.couponList.replaceChildren();
+        addTextElement(els.couponList, 'p', 'empty', '本次没有获取到代金券数据，请稍后刷新。');
+      }
+      show(els.couponBadge, false);
+      return;
+    }
+
+    var counts = coupons.counts || {};
+    setText(els.couponBalance, money(currency, coupons.availableBalance));
+    setText(els.couponDetail, '可用 ' + Number(coupons.availableCount || 0) + ' 张 · 面额合计 ' + money(currency, coupons.availableNominalValue));
+    setText(els.couponExpiry, coupons.availableCount > 0 ? timeText(coupons.nearestExpiryTime) : '暂无可用券');
+    var countText = '可用 ' + Number(counts.available || 0) + ' · 过期 ' + Number(counts.expired || 0) + ' · 作废 ' + Number(counts.cancelled || 0);
+    if (Number(counts.other || 0) > 0) countText += ' · 其他 ' + Number(counts.other || 0);
+    setText(els.couponCounts, countText);
+
+    if (Number(coupons.availableCount || 0) > 0) {
+      setText(els.couponBadge, '可用 ' + Number(coupons.availableCount || 0) + ' 张');
+      show(els.couponBadge, true);
+    } else {
+      show(els.couponBadge, false);
+    }
+
+    if (!els.couponList) return;
+    els.couponList.replaceChildren();
+    var items = Array.isArray(coupons.items) ? coupons.items : [];
+    var available = items.filter(function (item) { return item && item.status === 'available'; });
+    if (!available.length) {
+      addTextElement(els.couponList, 'p', 'empty', '当前没有可用的现金代金券。');
+      return;
+    }
+
+    var limit = Math.min(5, available.length);
+    for (var i = 0; i < limit; i += 1) {
+      var coupon = available[i] || {};
+      var row = document.createElement('div');
+      row.className = 'coupon-row';
+
+      var main = document.createElement('div');
+      main.className = 'coupon-main';
+      var title = coupon.no ? '券号 ' + String(coupon.no) : (coupon.id ? '券 ID ' + String(coupon.id) : '现金代金券');
+      addTextElement(main, 'p', 'coupon-title', title);
+      var products = coupon.applicableProducts ? String(coupon.applicableProducts) : '通用';
+      addTextElement(main, 'p', 'coupon-meta', '面额 ' + money(currency, coupon.nominalValue) + ' · ' + products + ' · 到期 ' + timeText(coupon.expiryTime));
+      row.appendChild(main);
+
+      var amount = document.createElement('div');
+      amount.className = 'coupon-amount';
+      addTextElement(amount, 'p', 'coupon-balance', money(currency, coupon.balance));
+      addTextElement(amount, 'p', 'coupon-nominal', '可用余额');
+      row.appendChild(amount);
+
+      els.couponList.appendChild(row);
+    }
+
+    if (available.length > limit) {
+      addTextElement(els.couponList, 'p', 'more', '另有 ' + (available.length - limit) + ' 张可用券未逐条列出。');
+    }
+  }
+
+  function renderOverview(overview) {
+    state.overview = overview && typeof overview === 'object' ? overview : null;
+    var data = state.overview || {};
+    var balance = data.accountBalance || null;
+    var coupons = data.cashCoupons || null;
+    var currency = (balance && balance.currency) || 'CNY';
+
+    if (balance) {
+      setText(els.balanceAvailable, money(currency, balance.availableAmount));
+      setText(els.balanceDetail, '现金余额 ' + money(currency, balance.cashAmount) + ' · 信控额度 ' + money(currency, balance.creditAmount));
+    } else {
+      setText(els.balanceAvailable, '未获取');
+      setText(els.balanceDetail, '本次查询未返回账户余额');
+    }
+
+    renderCoupons(coupons, currency);
+    renderErrors(data.errors);
+
+    if (data.fetchedAt) {
+      setText(els.fetchedAt, '数据时间 ' + timeText(data.fetchedAt) + '（北京时间）' + (data.cached ? ' · 30 秒缓存' : ''));
+    } else {
+      setText(els.fetchedAt, '尚未查询');
+    }
+  }
+
+  var rpcId = 0;
+  var pendingRequests = new Map();
+
+  function rpcRequest(method, params, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var id = ++rpcId;
+      var timer = window.setTimeout(function () {
+        pendingRequests.delete(id);
+        reject(new Error('bridge-timeout'));
+      }, timeoutMs || 20000);
+      pendingRequests.set(id, { resolve: resolve, reject: reject, timer: timer });
+      window.parent.postMessage({ jsonrpc: '2.0', id: id, method: method, params: params }, '*');
+    });
+  }
+
+  function rpcNotify(method, params) {
+    if (!state.bridgeReady) return;
+    window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params }, '*');
+  }
+
+  function settleRequest(message) {
+    var pending = pendingRequests.get(message.id);
+    if (!pending) return;
+    pendingRequests.delete(message.id);
+    window.clearTimeout(pending.timer);
+    if (message.error) {
+      var error = new Error('tool-error');
+      error.detail = message.error;
+      pending.reject(error);
+      return;
+    }
+    pending.resolve(message.result);
+  }
+
+  function applyHostContext(params) {
+    var source = params && typeof params === 'object' ? params : {};
+    var nested = source.hostContext || source.context || {};
+    var theme = source.theme || nested.theme;
+    if (theme) applyTheme(String(theme));
+  }
+
+  function handleToolResult(params) {
+    var source = params && typeof params === 'object' ? params : {};
+    var result = source.structuredContent
+      ? source
+      : (source.result && source.result.structuredContent ? source.result : null);
+    if (!result && source.toolResult && source.toolResult.structuredContent) result = source.toolResult;
+    var data = result && result.structuredContent;
+    if (data && typeof data === 'object' && (data.accountBalance !== undefined || data.cashCoupons !== undefined)) {
+      renderOverview(data);
+    }
+  }
+
+  window.addEventListener('message', function (event) {
+    if (event.source !== window.parent) return;
+    var message = event.data;
+    if (!message || message.jsonrpc !== '2.0') return;
+    if (message.id !== undefined && message.id !== null && message.method === undefined) {
+      settleRequest(message);
+      return;
+    }
+    if (message.method === 'ui/notifications/tool-result') {
+      handleToolResult(message.params);
+      return;
+    }
+    if (message.method === 'ui/notifications/host-context-changed') {
+      applyHostContext(message.params);
+    }
+  }, { passive: true });
+
+  async function initializeBridge() {
+    await rpcRequest('ui/initialize', {
+      appInfo: {
+        name: 'aliyun-bailian-balance-dashboard',
+        version: '0.2.0'
+      },
+      appCapabilities: {},
+      protocolVersion: '2026-01-26'
+    }, 15000);
+    state.bridgeReady = true;
+    rpcNotify('ui/notifications/initialized', {});
+  }
+
+  async function callTool(name, args) {
+    var response = await rpcRequest('tools/call', {
+      name: name,
+      arguments: args || {}
+    }, 30000);
+    if (response && response.isError && !response.structuredContent) throw new Error('tool-error');
+    if (response && response.structuredContent && typeof response.structuredContent === 'object') {
+      return response.structuredContent;
+    }
+    if (response && Array.isArray(response.content)) {
+      for (var i = 0; i < response.content.length; i += 1) {
+        var part = response.content[i];
+        if (part && part.type === 'text' && typeof part.text === 'string') {
+          try {
+            var parsed = JSON.parse(part.text);
+            if (parsed && typeof parsed === 'object') return parsed;
+          } catch (error) {
+            // 继续寻找结构化内容。
+          }
+        }
+      }
+    }
+    if (response && response.isError) throw new Error('tool-error');
+    return {};
+  }
+
+  async function refreshOverview(options) {
+    if (!state.status || !state.status.configured) return;
+    var quiet = !!(options && options.quiet);
+    if (!quiet) setBusy(true, '正在查询阿里云…');
+    try {
+      var overview = await callTool(TOOL_OVERVIEW, {});
+      renderOverview(overview);
+      if (!overview || overview.ok === false) {
+        setBanner('warn', '本次查询未成功，请查看下方查询提示。');
+      } else if (Array.isArray(overview.errors) && overview.errors.length) {
+        setBanner('warn', '部分数据未获取，其余结果已正常显示。');
+      } else {
+        setBanner('', '');
+      }
+    } catch (error) {
+      setBanner('warn', errorText(error));
+    } finally {
+      if (!quiet) setBusy(false);
+      syncViews();
+    }
+  }
+
+  async function loadCredentialStatus() {
+    setBusy(true, '正在检查本机凭据…');
+    try {
+      state.status = await callTool(TOOL_STATUS, {});
+      renderStatusLine();
+      syncViews();
+      if (state.status && state.status.configured) {
+        await refreshOverview({ quiet: true });
+      } else {
+        setBanner('info', '填写一次只读 RAM AccessKey，之后打开面板就会自动查询。');
+        if (els.akInput) els.akInput.focus();
+      }
+    } catch (error) {
+      setBanner('warn', errorText(error));
+    } finally {
+      setBusy(false);
+      syncViews();
+    }
+  }
+
+  async function onSave(event) {
+    if (event) event.preventDefault();
+    if (state.busy) return;
+    var accessKeyId = String(els.akInput ? els.akInput.value : '').trim();
+    var accessKeySecret = String(els.skInput ? els.skInput.value : '').trim();
+    if (!accessKeyId || !accessKeySecret) {
+      setBanner('warn', '请填写 AccessKey ID 和 AccessKey Secret。');
+      return;
+    }
+
+    setBusy(true, '正在加密保存 AccessKey…');
+    try {
+      var saved = await callTool(TOOL_SAVE, {
+        accessKeyId: accessKeyId,
+        accessKeySecret: accessKeySecret
+      });
+      if (!saved || saved.ok !== true) {
+        setBanner('warn', (saved && saved.message) || '保存失败，请检查 AccessKey 后重试。');
+        return;
+      }
+      state.status = await callTool(TOOL_STATUS, {});
+      state.editing = false;
+      renderStatusLine();
+      syncViews();
+      await refreshOverview({ quiet: true });
+      if (els.banner && els.banner.hidden) {
+        setBanner('success', 'AccessKey 已加密保存在本机，并已更新查询结果。');
+      }
+    } catch (error) {
+      setBanner('warn', errorText(error));
+    } finally {
+      if (els.akInput) els.akInput.value = '';
+      if (els.skInput) els.skInput.value = '';
+      setBusy(false);
+      syncViews();
+    }
+  }
+
+  async function doClear() {
+    if (state.busy) return;
+    setBusy(true, '正在清除本机凭据…');
+    try {
+      var cleared = await callTool(TOOL_CLEAR, {});
+      if (!cleared || cleared.ok !== true) {
+        setBanner('warn', (cleared && cleared.message) || '清除本机凭据失败，请稍后重试。');
+        return;
+      }
+      state.status = cleared;
+      state.overview = null;
+      state.editing = false;
+      renderStatusLine();
+      resetDashboard();
+      syncViews();
+      setBanner('success', cleared.message || '本机保存的 AccessKey 已删除。');
+      if (els.akInput) els.akInput.value = '';
+      if (els.skInput) els.skInput.value = '';
+      if (els.akInput) els.akInput.focus();
+    } catch (error) {
+      setBanner('warn', errorText(error));
+    } finally {
+      setBusy(false);
+      syncViews();
+    }
+  }
+
+  function onClearClick() {
+    var now = Date.now();
+    if (!state.confirmClearUntil || now > state.confirmClearUntil) {
+      state.confirmClearUntil = now + 5000;
+      setText(els.clear, '再点一次确认');
+      setBanner('warn', '再次点击“再点一次确认”将删除本机保存的 AccessKey。');
+      window.setTimeout(function () {
+        state.confirmClearUntil = 0;
+        setText(els.clear, '清除本机凭据');
+      }, 5000);
+      return;
+    }
+    state.confirmClearUntil = 0;
+    setText(els.clear, '清除本机凭据');
+    doClear();
+  }
+
+  function onChangeClick() {
+    state.editing = true;
+    if (els.akInput) els.akInput.value = '';
+    if (els.skInput) els.skInput.value = '';
+    setBanner('info', '填写新的只读 RAM AccessKey 后保存，旧凭据会被替换。');
+    syncViews();
+    if (els.akInput) els.akInput.focus();
+  }
+
+  function onCancelSetup() {
+    state.editing = false;
+    if (els.akInput) els.akInput.value = '';
+    if (els.skInput) els.skInput.value = '';
+    setBanner('', '');
+    syncViews();
+  }
+
+  function onToggleSecret() {
+    var input = els.skInput;
+    if (!input) return;
+    var revealing = input.type === 'password';
+    input.type = revealing ? 'text' : 'password';
+    setText(els.toggleSecret, revealing ? '隐藏' : '显示');
+    if (els.toggleSecret) {
+      els.toggleSecret.setAttribute('aria-label', revealing ? '隐藏 AccessKey Secret' : '显示 AccessKey Secret');
+    }
+  }
+
+  var lastSize = '';
+  function reportSize() {
+    var width = Math.ceil(document.documentElement.scrollWidth || 0);
+    var height = Math.ceil(document.documentElement.scrollHeight || 0);
+    var key = width + 'x' + height;
+    if (key === lastSize) return;
+    lastSize = key;
+    if (!state.bridgeReady) return;
+    window.parent.postMessage({
+      jsonrpc: '2.0',
+      method: 'ui/notifications/size-changed',
+      params: { width: width, height: height }
+    }, '*');
+  }
+
+  function watchSize() {
+    if (typeof ResizeObserver === 'function') {
+      var observer = new ResizeObserver(function () { reportSize(); });
+      observer.observe(document.documentElement);
+      if (document.body) observer.observe(document.body);
+    }
+    window.addEventListener('resize', reportSize, { passive: true });
+    window.setTimeout(reportSize, 60);
+    window.setTimeout(reportSize, 400);
+  }
+
+  function initialTheme() {
+    try {
+      if (window.openai && (window.openai.theme === 'light' || window.openai.theme === 'dark')) {
+        return window.openai.theme;
+      }
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    } catch (error) {
+      return 'auto';
+    }
+    return 'light';
+  }
+
+  async function boot() {
+    applyTheme(initialTheme());
+    watchSize();
+    resetDashboard();
+    renderStatusLine();
+    setBusy(true, '正在连接 Codex…');
+    try {
+      await initializeBridge();
+      renderStatusLine();
+      setBanner('', '');
+      await loadCredentialStatus();
+    } catch (error) {
+      setText(els.statusLine, '无法连接 Codex');
+      setBanner('warn', '面板与 Codex 的连接超时，请关闭面板后重新打开。');
+    } finally {
+      setBusy(false);
+      syncViews();
+      reportSize();
+    }
+  }
+
+  if (els.form) els.form.addEventListener('submit', onSave);
+  if (els.refresh) els.refresh.addEventListener('click', function () { refreshOverview(); });
+  if (els.change) els.change.addEventListener('click', onChangeClick);
+  if (els.clear) els.clear.addEventListener('click', onClearClick);
+  if (els.cancelSetup) els.cancelSetup.addEventListener('click', onCancelSetup);
+  if (els.toggleSecret) els.toggleSecret.addEventListener('click', onToggleSecret);
+
+  boot();
+})();
+</script>
+</body>
+</html>

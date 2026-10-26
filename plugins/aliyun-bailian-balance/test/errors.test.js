@@ -67,9 +67,10 @@ test('missing credentials produce an actionable message and stable scope', () =>
   assert.equal(error.scope, 'credentials')
   assert.equal(error.code, 'MissingCredentials')
   assert.equal(error.message, MISSING_CREDENTIALS_MESSAGE)
-  assert.match(error.message, /ALIYUN_ACCESS_KEY_ID/)
-  assert.match(error.message, /ALIYUN_ACCESS_KEY_SECRET/)
-  assert.match(error.message, /完全退出并重启 Codex/)
+  assert.match(error.message, /Codex 左侧/)
+  assert.match(error.message, /只读 RAM AccessKey/)
+  assert.match(error.message, /AccessKey Secret/)
+  assert.doesNotMatch(error.message, /ALIYUN_ACCESS_KEY_ID|系统属性|环境变量|重启 Codex/)
 })
 
 test('code normalizer is case-insensitive and ignores unknown raw codes', () => {

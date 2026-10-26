@@ -21,6 +21,17 @@ const CREDENTIALS = { accessKeyId: AK, accessKeySecret: SK }
 const NOW = Date.UTC(2026, 9, 26, 10, 0, 0)
 const NONCE = '0123456789abcdef0123456789abcdef'
 
+// 测试绝不读取当前 Windows 用户的真实 DPAPI 凭据文件。
+const MISSING_STORE = {
+  async load() { return { ok: false, reason: 'missing' } },
+  async save() { return { ok: false, reason: 'protect-failed' } },
+  async clear() { return { ok: true, removed: false } },
+}
+
+function runOverview(options) {
+  return getOverview({ credentialStore: MISSING_STORE, ...options })
+}
+
 function jsonResponse(body, status = 200) {
   return {
     ok: status >= 200 && status < 300,
@@ -149,7 +160,7 @@ test('a single failed interface still returns the other section with a Chinese h
     return jsonResponse({ Code: 'NoPermission', Success: false }, 403)
   }
 
-  const overview = await getOverview({
+  const overview = await runOverview({
     env: ENV,
     fetchImpl,
     cache: new TtlCache(CACHE_TTL_MS),
@@ -168,7 +179,7 @@ test('a single failed interface still returns the other section with a Chinese h
 })
 
 test('both failed interfaces produce ok false and two safe errors', async () => {
-  const overview = await getOverview({
+  const overview = await runOverview({
     env: ENV,
     fetchImpl: async () => jsonResponse({ Code: 'InternalError', Success: false }, 500),
     cache: new TtlCache(CACHE_TTL_MS),
@@ -187,7 +198,7 @@ test('both failed interfaces produce ok false and two safe errors', async () => 
 
 test('missing credentials fail fast without calling fetch', async () => {
   let calls = 0
-  const overview = await getOverview({
+  const overview = await runOverview({
     env: {},
     fetchImpl: async () => {
       calls += 1
@@ -201,8 +212,9 @@ test('missing credentials fail fast without calling fetch', async () => {
   assert.equal(overview.ok, false)
   assert.equal(overview.errors.length, 1)
   assert.equal(overview.errors[0].code, 'MissingCredentials')
-  assert.match(overview.errors[0].message, /ALIYUN_ACCESS_KEY_ID/)
-  assert.match(overview.errors[0].message, /ALIYUN_ACCESS_KEY_SECRET/)
+  assert.match(overview.errors[0].message, /Codex 左侧/)
+  assert.match(overview.errors[0].message, /只读 RAM AccessKey/)
+  assert.doesNotMatch(overview.errors[0].message, /ALIYUN_ACCESS_KEY_ID|系统属性|环境变量|重启 Codex/)
 })
 
 test('30-second cache prevents repeated requests and expires on time', async () => {
@@ -218,18 +230,18 @@ test('30-second cache prevents repeated requests and expires on time', async () 
     nonceFactory: () => NONCE,
   })
 
-  const first = await getOverview(options())
+  const first = await runOverview(options())
   assert.equal(first.cached, false)
   assert.equal(counter.calls.length, 2)
 
   nowMs += CACHE_TTL_MS - 1
-  const second = await getOverview(options())
+  const second = await runOverview(options())
   assert.equal(second.cached, true)
   assert.equal(second.fetchedAt, first.fetchedAt)
   assert.equal(counter.calls.length, 2)
 
   nowMs += 2
-  const third = await getOverview(options())
+  const third = await runOverview(options())
   assert.equal(third.cached, false)
   assert.equal(counter.calls.length, 4)
 })
@@ -259,7 +271,7 @@ test('network, permission, and signature failures map to actionable Chinese mess
   ]
 
   for (const item of cases) {
-    const overview = await getOverview({
+    const overview = await runOverview({
       env: ENV,
       fetchImpl: item.fetchImpl,
       cache: new TtlCache(CACHE_TTL_MS),
@@ -274,7 +286,7 @@ test('network, permission, and signature failures map to actionable Chinese mess
 })
 
 test('a 504 HTTP response is reported as a query timeout', async () => {
-  const overview = await getOverview({
+  const overview = await runOverview({
     env: ENV,
     fetchImpl: async () => jsonResponse({ Code: 'GatewayTimeout' }, 504),
     cache: new TtlCache(CACHE_TTL_MS),
@@ -293,7 +305,7 @@ test('a 504 HTTP response is reported as a query timeout', async () => {
 test('the 10-second timeout aborts a hanging request and degrades safely', async () => {
   let signalSeen = null
   const started = Date.now()
-  const overview = await getOverview({
+  const overview = await runOverview({
     env: ENV,
     fetchImpl: (url, options) => {
       signalSeen = options.signal
@@ -316,7 +328,7 @@ test('the 10-second timeout aborts a hanging request and degrades safely', async
 })
 
 test('rendered output and normalized data never contain credentials or signing fields', async () => {
-  const overview = await getOverview({
+  const overview = await runOverview({
     env: ENV,
     fetchImpl: successFetch(),
     cache: new TtlCache(CACHE_TTL_MS),

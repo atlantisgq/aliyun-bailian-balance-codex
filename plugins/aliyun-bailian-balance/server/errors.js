@@ -11,11 +11,11 @@ export class BssError extends Error {
 }
 
 export const MISSING_CREDENTIALS_MESSAGE =
-  '未检测到阿里云 AccessKey。请在本机系统环境变量中设置 ALIYUN_ACCESS_KEY_ID 和 ALIYUN_ACCESS_KEY_SECRET，然后完全退出并重启 Codex 再试。'
+  '未检测到阿里云 AccessKey。请打开 Codex 左侧“阿里云余额与代金券”面板，填写只读 RAM AccessKey ID 和 AccessKey Secret。'
 
 const HINTS = {
-  InvalidAccessKey: 'AccessKey ID 无效或已被禁用。请检查 RAM 用户的 AccessKey 状态；更新系统环境变量后需完全退出并重启 Codex。',
-  SignatureMismatch: 'AccessKey Secret 不正确，或本机系统时间偏差过大，导致签名校验失败。请核对 Secret 与系统时间；更新环境变量后需重启 Codex。',
+  InvalidAccessKey: 'AccessKey ID 无效或已被禁用。请在左侧面板重新填写有效 RAM 用户的 AccessKey。',
+  SignatureMismatch: 'AccessKey Secret 不正确，或本机系统时间偏差过大，导致签名校验失败。请在左侧面板核对 Secret，并检查本机系统时间。',
   PermissionDenied: '当前 RAM 用户缺少查询余额或代金券的只读权限。请为该 RAM 用户授予 AliyunBSSReadOnlyAccess 后重试。',
   Throttled: '阿里云请求过于频繁，请稍等片刻再试。',
   ServiceUnavailable: '阿里云服务暂时不可用，请稍后重试。',

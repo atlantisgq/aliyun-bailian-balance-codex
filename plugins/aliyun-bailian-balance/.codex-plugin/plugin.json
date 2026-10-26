@@ -1,6 +1,6 @@
 {
   "name": "aliyun-bailian-balance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "只读查询阿里云账户余额、现金余额、信控额度和现金代金券。",
   "author": {
     "name": "wai549077"
@@ -19,11 +19,12 @@
   "interface": {
     "displayName": "阿里云余额与代金券",
     "shortDescription": "查询阿里云余额与代金券",
-    "longDescription": "通过只读 RAM AccessKey 查询阿里云账户级可用金额、现金余额、信控额度和现金代金券。结果包含中文摘要、结构化明细、分类统计、最近到期时间与安全的错误提示。",
+    "longDescription": "在 Codex 左侧面板中加密保存只读 RAM AccessKey，并查询阿里云账户级可用金额、现金余额、信控额度和现金代金券。结果包含中文摘要、结构化明细、分类统计、最近到期时间与安全的错误提示。",
     "developerName": "wai549077",
     "category": "Productivity",
     "capabilities": [
-      "Read"
+      "Read",
+      "Interactive"
     ],
     "defaultPrompt": [
       "查询我的阿里云账户余额和可用代金券",
