@@ -1,0 +1,4 @@
+interface:
+  display_name: "阿里云余额与代金券"
+  short_description: "查询阿里云账户余额和现金券"
+  default_prompt: "查询我的阿里云账户余额和可用代金券，并按中文紧凑明细展示。"

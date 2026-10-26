@@ -1,0 +1,14 @@
+{
+  "name": "aliyun-bailian-balance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only Aliyun account balance and cash coupon MCP server.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node server/index.js"
+  }
+}

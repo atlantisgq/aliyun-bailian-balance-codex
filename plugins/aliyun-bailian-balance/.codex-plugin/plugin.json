@@ -1,0 +1,34 @@
+{
+  "name": "aliyun-bailian-balance",
+  "version": "0.1.0",
+  "description": "只读查询阿里云账户余额、现金余额、信控额度和现金代金券。",
+  "author": {
+    "name": "wai549077"
+  },
+  "license": "MIT",
+  "keywords": [
+    "aliyun",
+    "bailian",
+    "balance",
+    "cash-coupon",
+    "bss",
+    "read-only"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "阿里云余额与代金券",
+    "shortDescription": "查询阿里云余额与代金券",
+    "longDescription": "通过只读 RAM AccessKey 查询阿里云账户级可用金额、现金余额、信控额度和现金代金券。结果包含中文摘要、结构化明细、分类统计、最近到期时间与安全的错误提示。",
+    "developerName": "wai549077",
+    "category": "Productivity",
+    "capabilities": [
+      "Read"
+    ],
+    "defaultPrompt": [
+      "查询我的阿里云账户余额和可用代金券",
+      "看看阿里云账户还有多少现金余额和可用券",
+      "检查阿里云代金券的可用余额和最近到期时间"
+    ]
+  }
+}

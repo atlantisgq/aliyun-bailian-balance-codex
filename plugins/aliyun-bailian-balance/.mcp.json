@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "aliyun_balance": {
+      "command": "node",
+      "args": [
+        "server/index.js"
+      ],
+      "cwd": ".",
+      "env_vars": [
+        "ALIYUN_ACCESS_KEY_ID",
+        "ALIYUN_ACCESS_KEY_SECRET"
+      ],
+      "startup_timeout_sec": 10,
+      "tool_timeout_sec": 30
+    }
+  }
+}
