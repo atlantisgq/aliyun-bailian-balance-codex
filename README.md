@@ -37,15 +37,21 @@
 
 ## 安装
 
-在 PowerShell 中执行：
+把仓库克隆到本地（也可以直接用已下载的目录）：
 
 ```powershell
-codex plugin marketplace add C:\Users\atlan\Desktop\aliyun-bailian-balance-codex
+git clone https://github.com/atlantisgq/aliyun-bailian-balance-codex.git
+cd aliyun-bailian-balance-codex
+```
+
+然后注册本地 marketplace 并安装插件：
+
+```powershell
+codex plugin marketplace add .
 codex plugin add aliyun-bailian-balance@aliyun-bailian-tools
 ```
 
 安装完成后**完整退出并重新打开 Codex 一次**，让面板入口注册生效。之后更换或清除密钥都不再需要重启。
-
 ## 配置凭据
 
 **不需要系统属性，也不需要设置环境变量。**

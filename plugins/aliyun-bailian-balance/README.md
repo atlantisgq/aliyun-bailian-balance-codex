@@ -36,15 +36,16 @@ Codex 插件：在 Codex 左侧提供常驻的余额面板，通过只读 RAM Ac
 
 ## 安装
 
-在仓库根目录执行：
+把仓库克隆到本地后，在仓库根目录执行：
 
 ```powershell
-codex plugin marketplace add C:\Users\atlan\Desktop\aliyun-bailian-balance-codex
+git clone https://github.com/atlantisgq/aliyun-bailian-balance-codex.git
+cd aliyun-bailian-balance-codex
+codex plugin marketplace add .
 codex plugin add aliyun-bailian-balance@aliyun-bailian-tools
 ```
 
 然后完整退出并重启 Codex 一次。
-
 ## 使用
 
 打开左侧「阿里云余额与代金券」面板即可查看；也可以直接说：
